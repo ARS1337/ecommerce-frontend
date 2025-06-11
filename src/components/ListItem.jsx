@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addToCart, decreaseFromCart } from "../redux/slices/cartSlice";
+import { addToCart, decreaseFromCart } from "../redux/cart/cartReducer";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 

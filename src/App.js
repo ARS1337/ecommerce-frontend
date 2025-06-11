@@ -6,7 +6,13 @@ import Order from "./pages/Order";
 import MainLayout from "./components/MainLayout";
 import { ToastContainer } from "react-toastify";
 import Search from "./pages/Search";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
+import OnboardLayout from "./components/OnboardLayout";
+import Auth from "./pages/user/Login";
+import OrdersPage from "./pages/OrdersPage";
+import RequireSellerDetails from "./pages/seller/RequireSellerDetails";
+import SellerPage from "./pages/seller/ProductCrud";
+import SellerLoginPage from "./pages/seller/Login";
 
 function App() {
   return (
@@ -19,6 +25,14 @@ function App() {
             <Route path="/Cart" element={<Cart />} />
             <Route path="/order" element={<Order />} />
             <Route path="/search" element={<Search />} />
+            <Route path="/orders" element={<OrdersPage />} />
+          </Route>
+          <Route path="/onboard" element={<OnboardLayout />}>
+            <Route path="/onboard/signup" element={<Auth />} />
+          </Route>
+          <Route path="/sellerLogin" element={<SellerLoginPage/>} />
+          <Route element={<RequireSellerDetails />}>
+            <Route path="/seller/dashboard" element={<SellerPage />} />
           </Route>
         </Routes>
       </Router>

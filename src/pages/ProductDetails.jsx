@@ -1,24 +1,49 @@
-import React, { useState } from "react";
-import { Star } from "lucide-react"; // star icon from lucide
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Star } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart, decreaseFromCart } from "../redux/cart/cartReducer"; // update the path if needed
 
 const ProductDetails = () => {
-  const product = {
-    name: "Luxury Watch",
-    images: ["https://placehold.co/300x300/ffffff/000000?text=BLACKBOX+PLATE&font=monospace", 
-        "https://placehold.co/300x300/ffffff/000000?text=GLITCH+TEE&font=monospace",
-         "https://placehold.co/300x300/ffffff/000000?text=404+SOCKS&font=monospace"],
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla vitae ligula sed sem bibendum luctus at ut orci. Praesent sit amet convallis lectus. Suspendisse pretium enim ac tempor volutpat. In faucibus ex quis libero bibendum, quis rutrum justo rutrum. Suspendisse euismod velit accumsan quam fermentum, sit amet molestie lacus dictum. In hac habitasse platea dictumst. Sed in porta mauris, ac facilisis dolor. Nullam pretium sapien eros, aliquet rhoncus magna gravida at. In in mi eu urna bibendum tempor. Sed purus magna, aliquam in arcu sed, pretium venenatis ante. Ut at lacus lacinia, molestie risus ut, scelerisque lorem. Duis tristique leo elit, vitae venenatis orci ornare egestas. Cras molestie urna felis, nec gravida mauris pulvinar non.",
-    rating: 4.5, // out of 5
-    price: 499.99,
-    discountedPrice: 399.99,
-    tags: ["Luxury", "Watch", "Limited Edition"],
-    category: "Accessories",
-  };
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const dispatch = useDispatch();
 
-  const [mainImage, setMainImage] = useState(product.images[0]);
+  const cartItem = useSelector((state) => state.cart.items.find((i) => i.id === product?.id));
 
-  // Helper to render rating stars
+  const [mainImage, setMainImage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/product/${id}`);
+        if (!response.ok) throw new Error("Product not found");
+        const data = await response.json();
+
+        // Normalize product structure
+        const normalizedProduct = {
+          ...data,
+          images: [data.image, ...(data.extraImages || [])],
+          price: parseFloat(data.price),
+          discountedPrice: data.discountedPrice ? parseFloat(data.discountedPrice) : null,
+          rating: data.rating ?? 0,
+          category: data.Category?.name || "Uncategorized",
+        };
+
+        setProduct(normalizedProduct);
+        setMainImage(normalizedProduct.images[0]);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
   const renderStars = () => {
     const stars = [];
     const fullStars = Math.floor(product.rating);
@@ -30,12 +55,15 @@ const ProductDetails = () => {
     if (halfStar) {
       stars.push(<Star key="half" className="inline-block text-gold" fill="url(#halfGradient)" />);
     }
-    // Fill remaining with empty stars
     for (let i = stars.length; i < 5; i++) {
       stars.push(<Star key={`empty-${i}`} className="inline-block text-gray-700" />);
     }
     return stars;
   };
+
+  if (loading) return <div className="text-center text-white p-10">Loading...</div>;
+  if (error) return <div className="text-center text-red-400 p-10">Error: {error}</div>;
+  if (!product) return null;
 
   return (
     <div className="max-w-5xl mx-auto p-8 bg-gray-900 rounded-lg border border-gold text-gold font-sans">
@@ -44,7 +72,7 @@ const ProductDetails = () => {
       </h1>
 
       <div className="flex flex-col md:flex-row gap-10">
-        {/* Left: Images */}
+        {/* Images */}
         <div className="flex flex-col gap-4 w-full md:w-1/2">
           <div className="border-4 border-gold rounded-lg overflow-hidden">
             <img
@@ -53,8 +81,6 @@ const ProductDetails = () => {
               className="w-full h-[400px] object-cover transition-transform hover:scale-[1.02]"
             />
           </div>
-
-          {/* Thumbnail images */}
           <div className="flex gap-4 mt-2 overflow-x-auto">
             {product.images.map((img, idx) => (
               <button
@@ -71,19 +97,16 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Right: Details */}
+        {/* Details */}
         <div className="flex flex-col justify-between w-full md:w-1/2">
           <div>
-            {/* Rating */}
             <div className="mb-4 flex items-center gap-2">
               {renderStars()}
               <span className="text-yellow-300 font-semibold ml-2">{product.rating.toFixed(1)}</span>
             </div>
 
-            {/* Description */}
             <p className="mb-6 text-lg leading-relaxed">{product.description}</p>
 
-            {/* Price */}
             <div className="mb-6">
               {product.discountedPrice ? (
                 <>
@@ -95,14 +118,12 @@ const ProductDetails = () => {
               )}
             </div>
 
-            {/* Category */}
             <p className="mb-2 uppercase tracking-wide text-sm text-yellow-400 font-semibold">
               Category: {product.category}
             </p>
 
-            {/* Tags */}
             <div className="flex flex-wrap gap-2">
-              {product.tags.map((tag, idx) => (
+              {product.tags?.map((tag, idx) => (
                 <span
                   key={idx}
                   className="bg-yellow-700 bg-opacity-30 text-yellow-400 px-3 py-1 rounded-full text-sm font-semibold uppercase"
@@ -112,14 +133,30 @@ const ProductDetails = () => {
               ))}
             </div>
           </div>
-
-          {/* Add to Cart Button */}
-          <button
-            className="mt-8 bg-gradient-to-r from-gold to-yellow-400 text-gray-900 font-bold py-3 rounded-lg shadow-lg hover:from-yellow-400 hover:to-gold transition"
-            // onClick={... add to cart handler}
-          >
-            Add to Cart
-          </button>
+          {cartItem ? (
+            <div className="mt-8 flex items-center justify-between border border-neutral-700 p-2 rounded-xl bg-neutral-800">
+              <button
+                onClick={() => dispatch(decreaseFromCart(product))}
+                className="bg-neutral-950 text-gold px-3 py-1 font-bold rounded hover:bg-gold hover:text-black border border-gold transition"
+              >
+                −
+              </button>
+              <span className="px-4 text-lg font-semibold">{cartItem.quantity}</span>
+              <button
+                onClick={() => dispatch(addToCart(product))}
+                className="bg-neutral-950 text-gold px-3 py-1 font-bold rounded hover:bg-gold hover:text-black border border-gold transition"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => dispatch(addToCart(product))}
+              className="mt-8 w-full bg-gold text-black py-2 text-sm font-bold rounded-xl border border-gold hover:bg-neutral-900 hover:text-gold transition"
+            >
+              ADD TO CART
+            </button>
+          )}
         </div>
       </div>
     </div>
